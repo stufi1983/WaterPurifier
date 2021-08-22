@@ -14,6 +14,7 @@ using System.Threading;
 using SMData;
 using CreateExcelFile;
 
+
 namespace WaterPurifierAnalysis
 {
     public partial class Form1 : Form
@@ -53,8 +54,13 @@ namespace WaterPurifierAnalysis
             if (!createSQLLiteDB())
                 return;
 
-
-
+            string[] dglabel = { "DateTime", "Input Temp", "Input TDS", "Input PH", "Output Temp", "Output TDS", "Output PH" };
+            dataGridView1.ColumnCount = dglabel.Length;
+            for (int x=0;x<dglabel.Length;x++)
+            {
+                dataGridView1.Columns[x].HeaderText = dglabel[x];
+            }
+            
             DateTime dtNow = DateTime.Now;
             string strNow = dtNow.ToOADate().ToString(System.Globalization.CultureInfo.InvariantCulture);
 
@@ -101,7 +107,7 @@ namespace WaterPurifierAnalysis
             }
             catch (Exception err)
             {
-                MessageBox.Show("File System.Data.SQLite.dll tidak ditemukan" + err.HelpLink, Application.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Error, MessageBoxDefaultButton.Button1, MessageBoxOptions.DefaultDesktopOnly);
+                MessageBox.Show("File System.Data.SQLite.dll tidak , "+err.Message + err.HelpLink, Application.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Error, MessageBoxDefaultButton.Button1, MessageBoxOptions.DefaultDesktopOnly);
                 this.Close();
                 return false;
             }
@@ -121,11 +127,12 @@ namespace WaterPurifierAnalysis
 
             if (cmbSampling.SelectedItem != null)
             {
-                int.TryParse(cmbSampling.SelectedItem.ToString(), out durasiSampling);
+                int.TryParse(cmbSampling.SelectedItem.ToString().Split(' ')[0], out durasiSampling);
             }
             if (durasiSampling == 0)
                 durasiSampling = 5;
-
+            if (cmbSampling.SelectedItem.ToString().Contains("Menit"))
+                durasiSampling = durasiSampling * 60;
 
             if (serialPort != null)
             {
@@ -331,11 +338,24 @@ namespace WaterPurifierAnalysis
 
         private void UpdateAllChart()
         {
-            String kueri = @"insert into wqms_data (datetime, inTemp, inTDS, inPH, outTemp, outTDS, outPH) values (strftime('%s','now'), " + suhu_inArray[59].ToString().Replace(',', '.') + ", " + TDS_inArray[59].ToString().Replace(',', '.') + ", " + PH_inArray[59].ToString().Replace(',', '.') + ", " + suhu_outArray[59].ToString().Replace(',', '.') + ", " + TDS_outArray[59].ToString().Replace(',', '.') + ", " + PH_outArray[59].ToString().Replace(',', '.') + ")";
+            String kueri = @"insert into wqms_data (datetime, inTemp, inTDS, inPH, outTemp, outTDS, outPH) values (strftime('%s','now', '+7 hours'), " + suhu_inArray[59].ToString().Replace(',', '.') + ", " + TDS_inArray[59].ToString().Replace(',', '.') + ", " + PH_inArray[59].ToString().Replace(',', '.') + ", " + suhu_outArray[59].ToString().Replace(',', '.') + ", " + TDS_outArray[59].ToString().Replace(',', '.') + ", " + PH_outArray[59].ToString().Replace(',', '.') + ")";
+            dataGridView1.Rows.Add(new string[] {DateTime.Now.ToLongTimeString() , suhu_inArray[59].ToString(), TDS_inArray[59].ToString() , PH_inArray[59].ToString(), suhu_outArray[59].ToString(), TDS_outArray[59].ToString(), PH_outArray[59].ToString() });
             adata.ExecQuery(kueri);
             UpdateSuhuChart();
             UpdatePHChart();
             UpdateTDSChart();
+
+            dataGridView1.ClearSelection();//If you want
+
+            int nRowIndex = dataGridView1.Rows.Count - 1;
+            //int nColumnIndex = 3;
+
+            dataGridView1.Rows[nRowIndex].Selected = true;
+            dataGridView1.Rows[nRowIndex].Cells[0].Selected = true;
+
+            //In case if you want to scroll down as well.
+            dataGridView1.FirstDisplayedScrollingRowIndex = nRowIndex;
+            dataGridView1.ScrollBars = ScrollBars.Vertical;
         }
 
         private void serialPort_DataReceived(object sender, SerialDataReceivedEventArgs e)
@@ -360,6 +380,7 @@ namespace WaterPurifierAnalysis
 
         private void Form1_Shown(object sender, EventArgs e)
         {
+            label3.Left = Width - label3.Width - 20;
             suhuChart.Width = (Width - 100) / 2;
             suhuChart.Height = (Height - 100 - 100) / 2;
 
@@ -374,6 +395,24 @@ namespace WaterPurifierAnalysis
 
             PHChart.Top = suhuChart.Top + suhuChart.Height + 50;
             PHChart.Left = suhuChart.Left;
+
+            groupBox1.Left = TDSChart.Left;
+            groupBox1.Top = PHChart.Top;
+
+            groupBox1.Size = TDSChart.Size;
+
+            dataGridView1.Left = 20;
+            dataGridView1.Width = groupBox1.Width - 40;
+            dataGridView1.Height = groupBox1.Height  - 3 * button2.Height;
+
+            for (int x = 0; x < dataGridView1.ColumnCount; x++)
+            {
+                dataGridView1.Columns[x].Width = (int)((dataGridView1.Width-50) / 7);
+            }
+
+            button2.Top = groupBox1.Height - button2.Height - 20;
+            button2.Left = groupBox1.Width- button2.Width- 20;
+
         }
 
         private void timer2_Tick(object sender, EventArgs e)
@@ -568,6 +607,62 @@ namespace WaterPurifierAnalysis
             xdata.InsertValues(sheetName, row, cols, vals);
             waitForFile(xdata.IsFileReady(), "pembuatan header");
             */
+        }
+
+        private void Form1_ResizeEnd(object sender, EventArgs e)
+        {
+        }
+
+        private void Form1_Resize(object sender, EventArgs e)
+        {
+            Form1_Shown(sender, e);
+        }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                var saveFileDialog = new SaveFileDialog();
+                saveFileDialog.Filter = "XLS files (*.xls)|*.xls|XLT files (*.xlt)|*.xlt|XLSX files (*.xlsx)|*.xlsx|XLSM files (*.xlsm)|*.xlsm|XLTX (*.xltx)|*.xltx|XLTM (*.xltm)|*.xltm|ODS (*.ods)|*.ods|OTS (*.ots)|*.ots|CSV (*.csv)|*.csv|TSV (*.tsv)|*.tsv|HTML (*.html)|*.html|MHTML (.mhtml)|*.mhtml|PDF (*.pdf)|*.pdf|XPS (*.xps)|*.xps|BMP (*.bmp)|*.bmp|GIF (*.gif)|*.gif|JPEG (*.jpg)|*.jpg|PNG (*.png)|*.png|TIFF (*.tif)|*.tif|WMP (*.wdp)|*.wdp";
+                saveFileDialog.FilterIndex = 3;
+
+                if (saveFileDialog.ShowDialog() == DialogResult.OK)
+                {
+                    // creating Excel Application  
+                    Microsoft.Office.Interop.Excel._Application app = new Microsoft.Office.Interop.Excel.Application();
+                    // creating new WorkBook within Excel application  
+                    Microsoft.Office.Interop.Excel._Workbook workbook = app.Workbooks.Add(Type.Missing);
+                    // creating new Excelsheet in workbook  
+                    Microsoft.Office.Interop.Excel._Worksheet worksheet = null;
+                    // see the excel sheet behind the program  
+                    app.Visible = true;
+                    // get the reference of first sheet. By default its name is Sheet1.  
+                    // store its reference to worksheet  
+                    worksheet = workbook.Sheets["Sheet1"];
+                    worksheet = workbook.ActiveSheet;
+                    // changing the name of active sheet  
+                    worksheet.Name = "WQMS";
+                    // storing header part in Excel  
+                    for (int i = 1; i < dataGridView1.Columns.Count + 1; i++)
+                    {
+                        worksheet.Cells[1, i] = dataGridView1.Columns[i - 1].HeaderText;
+                    }
+                    // storing Each row and column value to excel sheet  
+                    for (int i = 0; i < dataGridView1.Rows.Count - 1; i++)
+                    {
+                        for (int j = 0; j < dataGridView1.Columns.Count; j++)
+                        {
+                            worksheet.Cells[i + 2, j + 1] = dataGridView1.Rows[i].Cells[j].Value.ToString();
+                        }
+                    }
+                    // save the application  
+                    workbook.SaveAs(saveFileDialog.FileName, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Microsoft.Office.Interop.Excel.XlSaveAsAccessMode.xlShared, Type.Missing, Type.Missing, Type.Missing, Type.Missing);
+                    // Exit from the application  
+                    app.Quit();
+                }
+            }
+            catch { }
+            //exportToolStripMenuItem_Click(sender, e);
         }
     }
     public class Package
