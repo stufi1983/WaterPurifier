@@ -5,13 +5,13 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("WaterPurifierAnalysis")]
-[assembly: AssemblyDescription("")]
+[assembly: AssemblyTitle("Water Quality Monitoring System")]
+[assembly: AssemblyDescription("Water Quality Monitoring System Polteknik Kesehatan Semarang")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("WaterPurifierAnalysis")]
+[assembly: AssemblyCompany("Polteknik Kesehatan Semarang")]
+[assembly: AssemblyProduct("Water Quality Monitoring System")]
 [assembly: AssemblyCopyright("Copyright ©  2019")]
-[assembly: AssemblyTrademark("")]
+[assembly: AssemblyTrademark("Polteknik Kesehatan Semarang")]
 [assembly: AssemblyCulture("")]
 
 // Setting ComVisible to false makes the types in this assembly not visible 
